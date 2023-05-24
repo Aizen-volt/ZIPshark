@@ -1,11 +1,13 @@
 # Author           : Mateusz Kaszubowski ( 193050 )
 # Created On       : 2023-04-25
 # Last Modified By : Mateusz Kaszubowski ( 193050 )
-# Last Modified On : 2023-05-23
-# Version          : release 1.0.0
+# Last Modified On : 2023-05-24
+# Version          : release 1.0.1
 #
-# Description      :
-#
+# Description      : ZIPshark is a ZIP archive password recovery tool. User can choose between two recovery modes: dictionary and brute-force.
+#					 Bruteforce mode - tries all possible combinations of characters defined by user (or amongst all characters if charset was not defined)
+#					 Dictionary mode - tries all words contained in dictionary pointed by user (or default one if not defined)
+#					 PLEASE NOTE that password recovery is both time and resource consuming process. It may take long to find password.
 #
 # Licensed under GPL (see /usr/share/common-licenses/GPL for more details
 # or contact # the Free Software Foundation for a copy)
@@ -23,7 +25,7 @@
 
 
 # META
-VERSION="release 1.0.0"
+VERSION="release 1.0.1"
 
 
 #EXECUTION MANAGEMENT
@@ -48,7 +50,6 @@ function checkPackage {
 		read -n 1 -s -r INPUT
 		if [[ "$INPUT" == "y" ]]; then
 			DISTRIBUTION=$(cat /etc/*-release | grep -w "ID" | cut -d "=" -f 2 | tr -d '"')
-			echo "$DISTRIBUTION"
 			if [[ "$DISTRIBUTION" == "ubuntu" ]]; then
 				sudo apt install $1
 			elif [[ "$DISTRIBUTION" == "fedora" ]]; then
@@ -75,7 +76,7 @@ function checkPackage {
 function checkDependencies {
 	checkPackage crunch
 	checkPackage unzip
-	checkPackage p7zip-full
+	checkPackage p7zip
 	checkPackage wget
 }
 
@@ -150,22 +151,36 @@ function print_version {
 
 function print_help {
 	printTitle
-	echo "----------------------------------------------"
-	echo "                    HELP                      "
-	echo "----------------------------------------------"
-	echo "-v, --version – info about version/author"
-    	echo "-h, --help – quick help, for more info see manual"
-    	echo "-b, --brute-force – try all possible combinnations amongst characters defined by user (or amongst all characters if charset was not defined using -c, --charset)"
-   	echo "-d, --dictionary <file_dir> - try breaching using words contained in dictionary pointed with <fire_dir>"
-    	echo "-c, --charset – choose characters to be used during brute-force"
-	echo "	a – small letters"
-	echo "	A – capital letters"
-	echo "	0 – digits"
-	echo "	! – special characters"
-    	echo "-l, --length-min – set minimal (inclusively) length of generated passwords"
-    	echo "-L, --length-max – set maximal (inclusively) length of generated passwords"
+	echo "------------------------------------------------------------------------------------------------------------------------"
+	echo "                                                     HELP                                                               "
+	echo "------------------------------------------------------------------------------------------------------------------------"
+	echo "ZIPshark is a ZIP archive password recovery tool. User can choose between two recovery modes: dictionary and brute-force."
 	echo ""
-	echo "Press any key to continue..."
+	echo "Bruteforce mode - tries all possible combinations of characters defined by user (or amongst all characters if charset was"
+	echo "                  not defined)"
+	echo "Dictionary mode - tries all words contained in dictionary pointed by user (or default one if not defined)"
+	echo ""
+	echo "PLEASE NOTE that password recovery is both time and resource consuming process. It may take long to find password."
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------"
+	echo "                                                    OPTIONS                                                             "
+	echo "------------------------------------------------------------------------------------------------------------------------"
+	echo "Here are listed all options you may encounter. For more info about each option see manual."
+	echo ""
+	echo "Version - info about version/author"
+	echo "Help - quick help, for more info see manual"
+	echo "Execution mode - choose between bruteforce and dictionary"
+	echo "File - choose archive to have password recovered"
+	echo "Min length - set minimal (inclusively) length of generated passwords"
+	echo "Max length - set maximal (inclusively) length of generated passwords"
+	echo "Charset - choose characters to be used during brute-force (small letters, capital letters, digits, special characters"
+	echo "          are to be toggled/untoggled)"
+	echo "Dictionary - choose dictionary to be used during dictionary attack (if not defined, default one will be used)"
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------"
+	echo ""
+	echo ""
+	echo "Press any key to exit..."
 	read -n 1 -s
 }
 
@@ -620,6 +635,8 @@ function toggleMainMenu {
 
 # CORE
 ####################################################################
+# maximize terminal window
+echo -ne "\e[8;220;220t"
 checkDependencies
 toggleMainMenu
 ####################################################################
