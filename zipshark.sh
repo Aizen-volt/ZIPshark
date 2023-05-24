@@ -2,7 +2,7 @@
 # Created On       : 2023-04-25
 # Last Modified By : Mateusz Kaszubowski ( 193050 )
 # Last Modified On : 2023-05-23
-# Version          : prealpha 0.0.6
+# Version          : release 1.0.0
 #
 # Description      :
 #
@@ -10,11 +10,20 @@
 # Licensed under GPL (see /usr/share/common-licenses/GPL for more details
 # or contact # the Free Software Foundation for a copy)
 
+
+# ERROR CODES
+# 1 - missing dependencies
+# 2 - package download failed
+# 3 - dictionary download failed
+# 4 - password not found
+# 12 - unsupported distribution
+
+
 #!/bin/bash
 
 
 # META
-VERSION="prealpha 0.0.6"
+VERSION="release 1.0.0"
 
 
 #EXECUTION MANAGEMENT
@@ -31,19 +40,43 @@ DICTIONARY=""
 DEFAULT_DICTIONARY="realhuman_phill.txt"
 
 
+function checkPackage {
+	printTitle
+	if ! [ -x "$(command -v $1)" ]; then
+		echo "Error: This script requires $1 command to be installed" >&2
+		echo "Do you want to install it? (y/n)"
+		read -n 1 -s -r INPUT
+		if [[ "$INPUT" == "y" ]]; then
+			DISTRIBUTION=$(cat /etc/*-release | grep -w "ID" | cut -d "=" -f 2 | tr -d '"')
+			echo "$DISTRIBUTION"
+			if [[ "$DISTRIBUTION" == "ubuntu" ]]; then
+				sudo apt install $1
+			elif [[ "$DISTRIBUTION" == "fedora" ]]; then
+				sudo dnf install $1
+			elif [[ "$DISTRIBUTION" == "centos" ]]; then
+				sudo yum install $1
+			else
+				echo "Your distribution is not supported!"
+				exit 12
+			fi
+			if [[ "$?" != "0" ]]; then
+				clear
+				echo "An error occured while installing $1!"
+				exit 2
+			fi
+			return
+		else
+			exit 1
+		fi
+	fi
+}
+
+
 function checkDependencies {
-	if ! [ -x "$(command -v crunch)" ]; then
-		echo "Error: This script requires crunch command to be installed" >&2
-		exit 1
-	fi
-	if ! [ -x "$(command -v 7z)" ]; then
-		echo "Error: This script requires 7z command to be installed" >&2
-		exit 1
-	fi
-	if ! [ -x "$(command -v unzip)" ]; then
-		echo "Error: This script requires unzip command to be installed" >&2
-		exit 1
-	fi
+	checkPackage crunch
+	checkPackage unzip
+	checkPackage p7zip-full
+	checkPackage wget
 }
 
 
@@ -210,7 +243,6 @@ function dictionary {
 		fi
 	done < $DICTIONARY
 	printPasswordNotFound
-	exit 2
 }
 
 
