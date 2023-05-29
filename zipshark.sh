@@ -1,8 +1,8 @@
 # Author           : Mateusz Kaszubowski ( 193050 )
 # Created On       : 2023-04-25
 # Last Modified By : Mateusz Kaszubowski ( 193050 )
-# Last Modified On : 2023-05-24
-# Version          : release 1.0.1
+# Last Modified On : 2023-05-29
+# Version          : release 1.0.2
 #
 # Description      : ZIPshark is a ZIP archive password recovery tool. User can choose between two recovery modes: dictionary and brute-force.
 #					 Bruteforce mode - tries all possible combinations of characters defined by user (or amongst all characters if charset was not defined)
@@ -10,7 +10,7 @@
 #					 PLEASE NOTE that password recovery is both time and resource consuming process. It may take long to find password.
 #
 # Licensed under GPL (see /usr/share/common-licenses/GPL for more details
-# or contact # the Free Software Foundation for a copy)
+# or contact  the Free Software Foundation for a copy)
 
 
 # ERROR CODES
@@ -18,6 +18,7 @@
 # 2 - package download failed
 # 3 - dictionary download failed
 # 4 - password not found
+# 5 - invalid argument
 # 12 - unsupported distribution
 
 
@@ -25,7 +26,7 @@
 
 
 # META
-VERSION="release 1.0.1"
+VERSION="release 1.0.2"
 
 
 #EXECUTION MANAGEMENT
@@ -42,6 +43,7 @@ DICTIONARY=""
 DEFAULT_DICTIONARY="realhuman_phill.txt"
 
 
+# checks if package is installed, if not - asks user if he wants to install it
 function checkPackage {
 	printTitle
 	if ! [ -x "$(command -v $1)" ]; then
@@ -50,6 +52,9 @@ function checkPackage {
 		read -n 1 -s -r INPUT
 		if [[ "$INPUT" == "y" ]]; then
 			DISTRIBUTION=$(cat /etc/*-release | grep -w "ID" | cut -d "=" -f 2 | tr -d '"')
+			if [[ "$1" == "p7zip" ]]; then
+				$1="p7zip-full"
+			fi
 			if [[ "$DISTRIBUTION" == "ubuntu" ]]; then
 				sudo apt install $1
 			elif [[ "$DISTRIBUTION" == "fedora" ]]; then
@@ -81,6 +86,7 @@ function checkDependencies {
 }
 
 
+# fetches exemplary dictionary from crackstation if /var/lib/zipshark is empty/does not exist
 function fetchDictionary {
 	DICTIONARY_EXISTS="true"
 
@@ -100,6 +106,7 @@ function fetchDictionary {
 		read -n 1 -s -r INPUT
 		if [[ "$INPUT" == "y" ]]; then
 			printTitle
+			# download, move to directory and unzip
 			sudo wget https://crackstation.net/files/crackstation-human-only.txt.gz
 			if [[ "$?" != "0" ]]; then
 				clear
@@ -143,6 +150,8 @@ function print_version {
 	printTitle
 	echo $VERSION
 	echo "Created by: Mateusz Kaszubowski"
+	echo "Contact: m.kaszubowski@poczta.onet.pl"
+	echo "or via github: aizen-volt"
 	echo ""
 	echo "Press any key to continue..."
 	read -n 1 -s
@@ -205,6 +214,11 @@ function dictionaryMenu {
 			1)
 				printTitle
 				read -p "Enter dictionary file directory: " INPUT
+				if [[ "$INPUT" == *"/"* ]]; then
+					echo "Archive needs to be present in script's directory"
+					sleep 3
+					continue
+				fi
 				TEMP=$(find -name $INPUT -type f)
 				if [[ "$TEMP" == "" ]]; then
 					echo "File not found!"
@@ -247,16 +261,16 @@ function dictionaryMenu {
 
 function dictionary {
 	clear
-	start=`date +%s`
+	start=`date +%s` # for elapsing execution time
 	while read -r password; do
-		unzip -qq -o -P $password $FILE 2>/dev/null
+		unzip -qq -o -P "$password" $FILE 2>/dev/null
 		exitcode=$? >> 8
 		if [[ "$exitcode" == "0" ]]; then
 			end=`date +%s`
 			runtime=$((end-start))
 			printPasswordFound $password $runtime
 		fi
-	done < $DICTIONARY
+	done < "$DICTIONARY"
 	printPasswordNotFound
 }
 
@@ -279,7 +293,7 @@ function dictionaryVerbal {
 			runtime=$((end-start))
 			printPasswordFound $password $runtime
 		fi
-	done < $DICTIONARY
+	done < "$DICTIONARY"
 	printPasswordNotFound
 }
 
@@ -305,6 +319,7 @@ function bruteforceMenu {
 			1)
 				printTitle
 				read -p "Enter min password length: " INPUT
+				# check if input is non-negative integer
 				if [[ $INPUT =~ ^[0-9]+$ ]]; then
 					if [[ "$MAX_LENGTH" != "" ]]; then
 						if [[ $INPUT -gt $MAX_LENGTH ]]; then
@@ -348,6 +363,7 @@ function bruteforceMenu {
 				INPUT=""
 				while [ "$INPUT" != 5 ]; do
 					printTitle
+					# choosing everything to false must be forbidden as no crunch arguments works same as all true
 					echo "Picking a range changes its appearance in generated passwords:"
 					echo "1. {a..z} : $SMALL"
 					echo "2. {A..Z} : $CAPITAL"
@@ -475,6 +491,7 @@ function bruteforceVerbal {
 		CHARSET=$CHARSET"!\"#$%&'()*+,-./:;<=>?@[\]^_\`{|}~"
 	fi
 
+	# crunch does not support passwords longer than 128 characters	
 	if [[  "$MAX_LENGTH" != "128" ]]; then
 		CHARSET_LENGTH=${#CHARSET}
 		CHARSET_LENGTH=$((CHARSET_LENGTH-2))
@@ -585,6 +602,11 @@ function toggleMainMenu {
 			2)
 				printTitle
 				read -p "Enter archive file directory: " INPUT
+				if [[ "$INPUT" == *"/"* ]]; then
+					echo "Archive needs to be present in script's directory"
+					sleep 3
+					continue
+				fi
 				TEMP=$(find -name $INPUT -type f)
 				if [[ "$TEMP" == "" ]]; then
 					echo "File not found!"
@@ -637,6 +659,24 @@ function toggleMainMenu {
 ####################################################################
 # maximize terminal window
 echo -ne "\e[8;220;220t"
+
+ARGUMENTS=$#
+if [[ "$ARGUMENTS" != "0" ]]; then
+	if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+		print_help
+		clear
+		exit 0
+	elif [[ "$1" == "-v" || "$1" == "--version" ]]; then
+		print_version
+		clear
+		exit 0
+	else
+		echo "Invalid argument!"
+		echo "Try -h or --help for more info"
+		exit 5
+	fi
+fi
+
 checkDependencies
 toggleMainMenu
 ####################################################################
