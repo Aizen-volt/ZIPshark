@@ -1,0 +1,29 @@
+.\" Manpage for ZIPshark
+.\" For more info contact m.kaszubowsk@poczta.onet.pl or aizen-volt on github
+.TH man 1 "24 May 2023" "1.0.1" "ZIPshark man page"
+.SH NAME
+ZIPshark \- recover ZIP passwords
+.SH SYNOPSIS
+zipshark.sh [-h / --help] [-v / --version]
+.SH DESCRIPTION
+ZIPshark is a ZIP archive password recovery tool. User can choose between two recovery modes: dictionary and brute-force.
+.br
+Bruteforce mode - tries all possible combinations of characters defined by user (or amongst all characters if charset was not defined).
+.br
+Dictionary mode - tries all words contained in dictionary pointed by user (or default one if not defined).
+.br
+PLEASE NOTE that password recovery is both time and resource consuming process. It may take long to find password.
+.SH OPTIONS
+ZIPshark lets user determine each recovery parameter during runtime. However it is possible to call it with:
+.br
+-v/--version to get info about current stable version and author,
+.br
+-h/--help to see help window without having to run script directly.
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+Mateusz Kaszubowski (m.kaszubowski@poczta.onet.pl)
+.SH REPORTING BUGS
+github.com/Aizen-volt
+.SH LICENSE
+Licensed under GPL (see /usr/share/common-licenses/GPL for more details or contact the Free Software Foundation for a copy)
